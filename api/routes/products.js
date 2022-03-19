@@ -2,6 +2,28 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/product');
 const mongoose = require('mongoose');
+const auth = require('../middleware/auth');
+
+const multer = require('multer')
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, './uploads')
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`)
+  }
+})
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 1024 * 1024 * 5 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed!'))
+    }
+    cb(null, true)
+  }
+})
 
 router.get('/', (req, res) => {
   Product.find()
@@ -13,11 +35,12 @@ router.get('/', (req, res) => {
     });
 });
 
-router.post('/', (req, res) => {
+router.post('/', auth, upload.single('productImage'), (req, res) => {
   const newProduct = new Product({
     _id: new mongoose.Types.ObjectId(),
     name: req.body.name,
     price: req.body.price,
+    productImage: req.file.path
   });
 
   newProduct.save()
@@ -41,7 +64,7 @@ router.get('/:productId', (req, res) => {
     });
 });
 
-router.put('/:productId', (req, res) => {
+router.put('/:productId', auth, (req, res) => {
   const { productId } = req.params;
 
   const updatedProduct = {
@@ -60,7 +83,7 @@ router.put('/:productId', (req, res) => {
     });
 });
 
-router.delete('/:productId', (req, res) => {
+router.delete('/:productId', auth, (req, res) => {
   const { productId } = req.params;
 
   Product.findByIdAndDelete(productId)

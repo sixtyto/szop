@@ -16,14 +16,17 @@ app.use(bodyParser.json());
 // routes
 const products = require('./api/routes/products');
 const orders = require('./api/routes/orders');
+const users = require('./api/routes/users');
 
+app.use('/uploads', express.static('uploads'));
 app.use('/products', products);
 app.use('/orders', orders);
+app.use('/users', users);
 
 app.use((req, res, next) => {
-  res.status(200)
+  res.status(404)
     .json({
-      message: 'It works!'
+      message: 'It can not be found!'
     });
 });
 

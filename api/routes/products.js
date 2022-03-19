@@ -1,9 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/product');
-const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
-
 const multer = require('multer')
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -13,6 +10,8 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`)
   }
 })
+
+const ProductsController = require('../controllers/products');
 
 const upload = multer({
   storage: storage,
@@ -25,76 +24,14 @@ const upload = multer({
   }
 })
 
-router.get('/', (req, res) => {
-  Product.find()
-    .then(data => {
-      res.status(200).json(data);
-    })
-    .catch(error => {
-      res.status(400).json({ error });
-    });
-});
+router.get('/', ProductsController.getAll);
 
-router.post('/', auth, upload.single('productImage'), (req, res) => {
-  const newProduct = new Product({
-    _id: new mongoose.Types.ObjectId(),
-    name: req.body.name,
-    price: req.body.price,
-    productImage: req.file.path
-  });
+router.post('/', auth, upload.single('productImage'), ProductsController.add);
 
-  newProduct.save()
-    .then(data => {
-      res.status(201).json(data)
-    })
-    .catch(error => {
-      res.status(400).json({ error });
-    });
-});
+router.get('/:productId', ProductsController.getOne);
 
-router.get('/:productId', (req, res) => {
-  const { productId } = req.params;
+router.put('/:productId', auth, ProductsController.update);
 
-  Product.findById(productId)
-    .then(data => {
-      res.status(200).json(data)
-    })
-    .catch(error => {
-      res.status(400).json({ error });
-    });
-});
-
-router.put('/:productId', auth, (req, res) => {
-  const { productId } = req.params;
-
-  const updatedProduct = {
-    name: req.body.name,
-    price: req.body.price,
-  };
-
-  Product.findByIdAndUpdate(productId, updatedProduct)
-    .then(() => {
-      res.status(200).json({
-        message: `Product ${productId} updated successfully`,
-      });
-    })
-    .catch(error => {
-      res.status(400).json({ error });
-    });
-});
-
-router.delete('/:productId', auth, (req, res) => {
-  const { productId } = req.params;
-
-  Product.findByIdAndDelete(productId)
-    .then(() => {
-      res.status(200).json({
-        message: `Product ${productId} deleted successfully`,
-      });
-    })
-    .catch(error => {
-      res.status(400).json({ error });
-    });
-});
+router.delete('/:productId', auth, ProductsController.delete);
 
 module.exports = router;
